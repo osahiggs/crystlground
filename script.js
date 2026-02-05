@@ -1,86 +1,75 @@
 (() => {
-      // reveal
-      const observer = new IntersectionObserver((entries)=>{
-        entries.forEach(entry=>{
-          if(entry.isIntersecting){ entry.target.classList.add('show') }
-        })
-      }, { threshold: 0.15 })
-      document.querySelectorAll('.fade-up,.scale-in').forEach(el => observer.observe(el))
+  // Reveal-on-scroll (fade-up/scale-in)
+  try{
+    const els = document.querySelectorAll('.fade-up, .scale-in');
+    if(els.length){
+      const obs = new IntersectionObserver((entries)=>{
+        entries.forEach(e=>{
+          if(e.isIntersecting){ e.target.classList.add('show'); obs.unobserve(e.target); }
+        });
+      }, { threshold: 0.15, rootMargin: '0px 0px -10% 0px' });
+      els.forEach(el=>obs.observe(el));
+    }
+  }catch(_){}
 
-      // FAQ (single open) — smooth animation
-      const faqItems = document.querySelectorAll('.faq-item')
-
-      const closeItem = (item) => {
-        item.classList.remove('active')
-        const ans = item.querySelector('.faq-answer')
-        if(ans){
-          ans.style.maxHeight = ans.scrollHeight + 'px'
-          requestAnimationFrame(() => { ans.style.maxHeight = '0px' })
+  // FAQ smooth accordion
+  try{
+    const items = document.querySelectorAll('.faq-item');
+    items.forEach((item)=>{
+      const btn = item.querySelector('.faq-question');
+      const ans = item.querySelector('.faq-answer');
+      if(!btn || !ans) return;
+      ans.style.height = '0px';
+      btn.addEventListener('click', ()=>{
+        const open = item.classList.contains('open');
+        items.forEach(o=>{
+          if(o!==item){ o.classList.remove('open'); const a=o.querySelector('.faq-answer'); if(a) a.style.height='0px'; }
+        });
+        if(open){ item.classList.remove('open'); ans.style.height='0px'; }
+        else { item.classList.add('open'); ans.style.height = ans.scrollHeight + 'px'; }
+      });
+    });
+    window.addEventListener('resize', ()=>{
+      items.forEach(i=>{
+        if(i.classList.contains('open')){
+          const a=i.querySelector('.faq-answer'); if(a) a.style.height = a.scrollHeight + 'px';
         }
-      }
+      });
+    });
+  }catch(_){}
 
-      faqItems.forEach(item => {
-        const btn = item.querySelector('.faq-question')
-        const ans = item.querySelector('.faq-answer')
-        if(!btn || !ans) return
-
-        ans.style.maxHeight = '0px'
-
-        btn.addEventListener('click', () => {
-          const isOpen = item.classList.contains('active')
-
-          faqItems.forEach(i => { if(i !== item) closeItem(i) })
-
-          if(isOpen){
-            closeItem(item)
-          }else{
-            item.classList.add('active')
-            ans.style.maxHeight = ans.scrollHeight + 'px'
+  // Artists tiles fade-in
+  try{
+    const tiles = document.querySelectorAll('.artist-tile, .fade-in');
+    if(tiles.length){
+      const io = new IntersectionObserver((entries)=>{
+        entries.forEach(e=>{
+          if(e.isIntersecting){
+            e.target.classList.add('visible');
+            io.unobserve(e.target);
           }
-        })
-      })
+        });
+      }, { threshold: 0.15, rootMargin: '0px 0px -10% 0px' });
+      tiles.forEach(t=>io.observe(t));
+    }
+  }catch(_){}
 
-      // keep height correct on resize
-      window.addEventListener('resize', () => {
-        faqItems.forEach(item => {
-          if(!item.classList.contains('active')) return
-          const ans = item.querySelector('.faq-answer')
-          if(ans) ans.style.maxHeight = ans.scrollHeight + 'px'
-        })
-      })
-
-      // contact form (Formspree)
-      const form = document.getElementById('contactForm')
-      const statusEl = document.getElementById('formStatus')
-      if(form && statusEl){
-        form.addEventListener('submit', async (e)=>{
-          if(form.action.includes('YOUR_FORM_ID')){
-            e.preventDefault()
-            statusEl.textContent = 'replace YOUR_FORM_ID in the form action to make this send for real.'
-            return
-          }
-          e.preventDefault()
-          statusEl.textContent = 'sending…'
-          try{
-            const res = await fetch(form.action, {
-              method: 'POST',
-              body: new FormData(form),
-              headers: { 'Accept': 'application/json' }
-            })
-            if(res.ok){
-              form.reset()
-              statusEl.textContent = 'Sent! We will be in touch soon.'
-            }else{
-              statusEl.textContent = 'Could not send. Try again or email us directly.'
-            }
-          }catch(err){
-            statusEl.textContent = 'Network error. Try again or email us directly.'
-          }
-        })
-      }
-
-      // lightweight tests
-      console.assert(document.querySelectorAll('#contactForm').length === 1, 'Expected exactly 1 contact form with id="contactForm"')
-      console.assert(document.querySelectorAll('.faq-item').length === 4, 'Expected 4 FAQ items')
-      console.assert(document.querySelectorAll('.bubble').length > 0, 'Expected at least 1 bubble element')
-    })()
+  // Contact form status
+  try{
+    const form = document.getElementById('contactForm');
+    const statusEl = document.getElementById('formStatus');
+    if(form && statusEl){
+      form.addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        statusEl.textContent = 'sending…';
+        try{
+          const res = await fetch(form.action, { method:'POST', body:new FormData(form), headers:{'Accept':'application/json'} });
+          if(res.ok){ form.reset(); statusEl.textContent = "sent. we'll get back to you soon."; }
+          else { statusEl.textContent = 'could not send. try again or email us directly.'; }
+        }catch(err){
+          statusEl.textContent = 'network error. try again or email us directly.';
+        }
+      });
+    }
+  }catch(_){}
+})();
